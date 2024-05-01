@@ -1,5 +1,6 @@
 const User = require('../models/userModel.js');
 const {generateToken} = require('../utils/jwt.js');
+const sendEmail = require('../utils/email.js');
 
 exports.signup = async(req,res)=>{
     try{
@@ -13,6 +14,7 @@ exports.signup = async(req,res)=>{
       } 
       
       const token  = generateToken(payload);
+      sendEmail(newAdmin.email,'Welcome to our website', 'Thank you for registering with us!')
        res.status(201).json({
        status:"success",
        token:token,
@@ -78,4 +80,12 @@ exports.getALlData = async(req,res)=>{
       })
      }
 }
-// kunal
+
+
+exports.forgotPassword = async(req,res)=>{
+
+};
+
+exports.resetPassword = async(req,res)=>{
+
+}
