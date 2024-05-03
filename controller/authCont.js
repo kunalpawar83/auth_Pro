@@ -119,5 +119,41 @@ exports.forgotPassword = async(req,res)=>{
 };
 
 exports.resetPassword = async(req,res)=>{
+   try{
+   const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() }
+  });
+   if(!user){
+      res.status(400).json({
+         status:"fail",
+         error:"Token is invalid or has expired"
+      })
+   }
+      user.password = req.body.password;
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save();
+
+      const payload = {
+         id:user.id
+      } 
+      const token  = generateToken(payload);
+      res.status(200).json({
+         status:"success",
+         message:"done",
+         token
+      })
+   }catch(err){
+      console.log(err);
+      res.status(500).json({
+        status:"fail",
+        error:"Internal server error"
+     })
+   }
 
 };
