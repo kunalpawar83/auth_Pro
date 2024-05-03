@@ -1,6 +1,8 @@
 const User = require('../models/userModel.js');
 const {generateToken} = require('../utils/jwt.js');
-const sendEmail = require('../utils/email.js');
+const sendemail =  require('../utils/email.js');
+const crypto = require('crypto')
+
 
 exports.signup = async(req,res)=>{
     try{
@@ -14,7 +16,6 @@ exports.signup = async(req,res)=>{
       } 
       
       const token  = generateToken(payload);
-      sendEmail(newAdmin.email,'Welcome to our website', 'Thank you for registering with us!')
        res.status(201).json({
        status:"success",
        token:token,
@@ -62,8 +63,6 @@ exports.login = async(req,res)=>{
 };
 
 
-
-
 exports.getALlData = async(req,res)=>{
      try{
        const userData  = await User.find();
@@ -83,9 +82,42 @@ exports.getALlData = async(req,res)=>{
 
 
 exports.forgotPassword = async(req,res)=>{
+   const user  = await User.findOne({email:req.body.email})
+   if(!user){
+      return res.status(404).json({
+         status:"fail",
+         error:"there is no user with that email id"
+      })
+   }
+   try{
+      const resetToken  = user.createPasswordResetToken();
+      await user.save({validateBeforeSave:false});
+      
+      const resetURL =  `${req.protocol}://${req.get('host')}/user/resetpassword/${resetToken}`;
 
+      const message = `Forget your password? submit a PATCH request with your new password 
+      passowrdconfirm  --${resetURL}.\n if you didt'n forget your passowrd , please ignore this message!`;
+
+      await sendemail({
+         email: user.email,
+         subject: 'Your password reset token (valid for 10 min)',
+         message
+       });
+      res.status(200).json({
+         status:"success", 
+      })
+   }catch(err){
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save({validateBeforeSave:false});
+         console.log(err);
+          res.status(500).json({
+            status:"fail",
+            error:"Internal server error"
+         })
+   }
 };
 
 exports.resetPassword = async(req,res)=>{
 
-}
+};
